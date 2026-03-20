@@ -1,3 +1,8 @@
+app:
+  jwt:
+    secret-key: ${JWT_SECRET:Aq6pZgd05v69f4af91ma43541U0f5fb6Z2dc23}
+    expiration-time: 900000 # 15 minutes
+
 server:
   port: 9099
 
@@ -5,7 +10,7 @@ spring:
   application:
     name: Mfa Application
   datasource:
-    url: jdbc:postgresql://localhost:5432/mfa_app_db
+    url: jdbc:postgresql://localhost:5435/mfa_app_db
     username: tountoun
     password: 12345
     driver-class-name: org.postgresql.Driver
