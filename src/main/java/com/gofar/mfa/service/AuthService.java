@@ -4,6 +4,7 @@ package com.gofar.mfa.service;
 import com.gofar.mfa.dto.AuthDto;
 import com.gofar.mfa.entity.User;
 import com.gofar.mfa.repository.UserRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -11,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Set;
 
+@Slf4j
 @Service
 public class AuthService {
 
@@ -24,15 +26,21 @@ public class AuthService {
      */
     @Transactional
     public AuthDto.UserInfo register(AuthDto.RegistrationDto registrationData) {
+        log.info("Attempting to register new user with username: {}", registrationData.getUsername());
+
         if (this.userRepository.existsByUsername(registrationData.getUsername())) {
+            log.warn("Registration failed: Username '{}' already exists", registrationData.getUsername());
             throw new IllegalArgumentException("Username already exists");
         }
         if (this.userRepository.existsByEmail(registrationData.getEmail())) {
+            log.warn("Registration failed: Email '{}' already exists", registrationData.getEmail());
             throw new IllegalArgumentException("Email already exists");
         }
 
         User user = getUserDataForRegistration(registrationData);
         this.userRepository.save(user);
+        log.info("Successfully registered user: {} with email: {}", user.getUsername(), user.getEmail());
+
         return getUserInfoAfterRegistration(user);
     }
 

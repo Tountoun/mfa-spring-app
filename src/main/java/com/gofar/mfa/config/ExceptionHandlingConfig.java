@@ -18,6 +18,7 @@ public class ExceptionHandlingConfig {
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiResponse> handleIllegalArgument(IllegalArgumentException ex) {
+        log.warn("IllegalArgumentException: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.error(ex.getMessage()));
     }
@@ -30,13 +31,14 @@ public class ExceptionHandlingConfig {
             String field = ((FieldError) error).getField();
             errors.put(field, error.getDefaultMessage());
         });
+        log.warn("Validation error: {}", errors);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.error("Validation error").tap(r -> r.setData(errors)));
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse> handleGeneric(Exception ex) {
-        log.error("Unhandled error : {}", ex.getMessage(), ex);
+        log.error("Unhandled error: {}", ex.getMessage(), ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error("An internal error occurred"));
     }

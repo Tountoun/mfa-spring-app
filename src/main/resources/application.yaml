@@ -2,6 +2,7 @@ app:
   jwt:
     secret-key: ${JWT_SECRET:Aq6pZgd05v69f4af91ma43541U0f5fb6Z2dc23}
     expiration-time: 900000 # 15 minutes
+  name: mfa-app
 
 server:
   port: 9099
@@ -20,7 +21,12 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl-auto: update
-      show-sql: false
+    show-sql: false
+
+logging:
+  file:
+    name: mfa
+    path: ${user.home}/${app.name}/logs
 
 springdoc:
   api-docs:
