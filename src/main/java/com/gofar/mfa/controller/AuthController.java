@@ -3,6 +3,8 @@ package com.gofar.mfa.controller;
 import com.gofar.mfa.dto.ApiResponse;
 import com.gofar.mfa.dto.AuthDto;
 import com.gofar.mfa.service.AuthService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -14,12 +16,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/auth")
+@Tag(name = "Auth", description = "Authentication API")
 public class AuthController {
 
     private AuthService authService;
 
 
     @PostMapping("/register")
+    @Operation(summary = "Register a new user")
     public ResponseEntity<ApiResponse> register(
             @Valid
             @RequestBody AuthDto.RegistrationDto registrationData
