@@ -32,6 +32,15 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok("User registered successfully", userInfo));
     }
 
+    @PostMapping("/login")
+    @Operation(summary = "Login a user", description = "Login a user and return a JWT token with user information")
+    public ResponseEntity<ApiResponse> login(
+            @Valid
+            @RequestBody AuthDto.LoginRequest loginRequest
+    ) {
+        return ResponseEntity.ok(ApiResponse.ok("Login successful", this.authService.authenticate(loginRequest)));
+    }
+
     @Autowired
     public void setAuthService(AuthService authService) {
         this.authService = authService;

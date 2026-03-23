@@ -23,6 +23,14 @@ public class JwtService {
     @Value("${app.jwt.expiration-time}")
     private long jwtExpirationTime;
 
+    /**
+     * Generate a token for the user
+     * @param userDetails the details of the user
+     * @return the token
+     */
+    public String generateToken(UserDetails userDetails) {
+        return buildToken(Map.of(), userDetails.getUsername(), jwtExpirationTime);
+    }
 
     /**
      * Extract the username from the token

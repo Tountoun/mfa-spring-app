@@ -4,6 +4,8 @@ import com.gofar.mfa.dto.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -20,6 +22,18 @@ public class ExceptionHandlingConfig {
     public ResponseEntity<ApiResponse> handleIllegalArgument(IllegalArgumentException ex) {
         log.warn("IllegalArgumentException: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(ex.getMessage()));
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<ApiResponse> handleBadCredentials(BadCredentialsException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.error(ex.getMessage()));
+    }
+
+    @ExceptionHandler(LockedException.class)
+    public ResponseEntity<ApiResponse> handleLocked(LockedException ex) {
+        return ResponseEntity.status(HttpStatus.LOCKED)
                 .body(ApiResponse.error(ex.getMessage()));
     }
 

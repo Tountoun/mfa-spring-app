@@ -4,20 +4,42 @@ package com.gofar.mfa.service;
 import com.gofar.mfa.dto.AuthDto;
 import com.gofar.mfa.entity.User;
 import com.gofar.mfa.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.LockedException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.Objects;
 import java.util.Set;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class AuthService {
 
     private UserRepository userRepository;
     private PasswordEncoder passwordEncoder;
+    private JwtService jwtService;
+    private final AuthenticationManager authenticationManager;
+    private final UserDetailsService userDetailsService;
+
+    @Value("${app.security.max-login-attempts:5}")
+    private int maxLoginAttempts;
+
+    @Value("${app.security.lockout-duration-minutes:15}")
+    private int lockoutDurationMinutes;
 
 
     /**
@@ -42,6 +64,81 @@ public class AuthService {
         log.info("Successfully registered user: {} with email: {}", user.getUsername(), user.getEmail());
 
         return getUserInfoAfterRegistration(user);
+    }
+
+    /**
+     * This method is used to authenticate a user and issue a JWT token if credentials are valid
+     * @param loginRequest the login request
+     * @return the login response with token and user info
+     */
+    public AuthDto.LoginResponse authenticate(AuthDto.LoginRequest loginRequest) {
+        User user = this.userRepository.findByUsername(loginRequest.getUsername())
+                .orElseThrow(() -> {
+                    log.warn("Authentication failed: User not found with username: {}", loginRequest.getUsername());
+                    return new BadCredentialsException("Invalid user credentials");
+                });
+
+        checkAccountLock(user);
+
+        try {
+            this.authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword())
+            );
+        } catch (AuthenticationException e) {
+            log.warn("Authentication failed: Invalid credentials for user: {}", user.getUsername());
+            handleFailedAuthentication(user);
+            throw new BadCredentialsException("Invalid user credentials");
+        }
+
+        userRepository.resetFailedAttempts(user.getUsername());
+        userRepository.updateLastLogin(user.getUsername(), LocalDateTime.now());
+
+        UserDetails userDetails = this.userDetailsService.loadUserByUsername(user.getUsername());
+        String token = jwtService.generateToken(userDetails);
+        log.info("Authentication successful for user: {}", user.getUsername());
+        return AuthDto.LoginResponse.success(token, getUserInfoAfterRegistration(user));
+    }
+
+    /**
+     * Handle failed authentication
+     * This method is called when the authentication fails,
+     * It updates the failed attempts and locks the account if the max attempts are reached
+     * @param user the user entity
+     */
+    private void handleFailedAuthentication(User user) {
+        int currentTotalAttempts = user.getFailedAttempts() + 1;
+        user.setFailedAttempts(currentTotalAttempts);
+
+        log.debug("Failed login attempt {} for user: {}", currentTotalAttempts, user.getUsername());
+
+        if (currentTotalAttempts >= this.maxLoginAttempts) {
+            user.setAccountLocked(true);
+            user.setLockTime(LocalDateTime.now());
+            log.warn("Account locked for user: {} after {} failed attempts", user.getUsername(), currentTotalAttempts);
+        }
+
+        this.userRepository.updateLoginAttempts(
+                user.getUsername(),
+                currentTotalAttempts,
+                user.getLockTime(),
+                user.isAccountLocked()
+        );
+    }
+
+    /**
+     * Check if the account is locked and unlock it if the lockout duration is over
+     * @param user the user entity
+     */
+    private void checkAccountLock(User user) {
+        if (user.isAccountLocked()) {
+            if (Objects.nonNull(user.getLockTime()) && LocalDateTime.now().isAfter(user.getLockTime().plusMinutes(this.lockoutDurationMinutes))) {
+                this.userRepository.resetFailedAttempts(user.getUsername());
+                return;
+            }
+            log.warn("Account is locked for user: {}", user.getUsername());
+            int remainingMinutes = Math.toIntExact(this.lockoutDurationMinutes - Duration.between(user.getLockTime(), LocalDateTime.now()).toMinutes());
+            throw new LockedException("Account is locked. Please retry after " + remainingMinutes + " minutes.");
+        }
     }
 
     /**
@@ -86,5 +183,10 @@ public class AuthService {
     @Autowired
     public void setPasswordEncoder(PasswordEncoder passwordEncoder) {
         this.passwordEncoder = passwordEncoder;
+    }
+
+    @Autowired
+    public void setJwtService(JwtService jwtService) {
+        this.jwtService = jwtService;
     }
 }

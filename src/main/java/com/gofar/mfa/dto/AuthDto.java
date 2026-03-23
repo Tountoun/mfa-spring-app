@@ -38,6 +38,45 @@ public class AuthDto {
     }
 
     @Data
+    @Schema(name = "LoginRequest", description = "Data transfer object for user login")
+    public static class LoginRequest {
+        @NotBlank(message = "The username is required")
+        @Schema(description = "Username for login purpose", example = "johndoe")
+        private String username;
+
+        @NotBlank(message = "The password is required")
+        @Schema(description = "The password of user for login purpose", example = "password123")
+        private String password;
+    }
+
+    @Data
+    @Schema(name = "LoginResponse", description = "Data transfer object for user login response")
+    public static class LoginResponse {
+        @Schema(description = "Is MFA required", example = "false")
+        private boolean mfaRequired;
+
+        @Schema(description = "Pre-authentication token in case MFA is required (short lived token)", example = "123e4567-e89b-12d3-a456-426614174000")
+        private String preAuthToken;
+
+        @Schema(description = "Access token in case MFA is not required", example = "123e4567-e89b-12d3-a456-426614174000")
+        private String accessToken;
+
+        @Schema(description = "Token type", example = "Bearer")
+        private String tokenType = "Bearer";
+
+        @Schema(description = "User information", implementation = UserInfo.class)
+        private UserInfo user;
+
+        public static LoginResponse success(String accessToken, UserInfo user) {
+            LoginResponse r = new LoginResponse();
+            r.mfaRequired = false;
+            r.accessToken = accessToken;
+            r.user = user;
+            return r;
+        }
+    }
+
+    @Data
     @Builder
     @Schema(name = "UserInfo", description = "Data transfer object for user information")
     public static class UserInfo {

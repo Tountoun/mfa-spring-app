@@ -1,8 +1,11 @@
 app:
   jwt:
-    secret-key: ${JWT_SECRET:Aq6pZgd05v69f4af91ma43541U0f5fb6Z2dc23}
+    secret-key: ${JWT_SECRET:DPCjgTPZXCu8xz3QgeO07jHn37Koei86ZpUIhW2eAVc=}
     expiration-time: 900000 # 15 minutes
   name: mfa-app
+  security:
+    max-login-attempts: 3
+    lockout-duration-minutes: 15
 
 server:
   port: 9099
