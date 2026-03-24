@@ -2,6 +2,7 @@ app:
   jwt:
     secret-key: ${JWT_SECRET:DPCjgTPZXCu8xz3QgeO07jHn37Koei86ZpUIhW2eAVc=}
     expiration-time: 900000 # 15 minutes
+    pre-auth-expiration-time: 300000 # 5 minutes
   name: mfa-app
   security:
     max-login-attempts: 3

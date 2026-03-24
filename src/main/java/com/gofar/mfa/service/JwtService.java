@@ -23,13 +23,28 @@ public class JwtService {
     @Value("${app.jwt.expiration-time}")
     private long jwtExpirationTime;
 
+    @Value("${app.jwt.pre-auth-expiration-time}")
+    private long preAuthExpirationTime;
+
+    // Claim to indicate that the token is temporary
+    private static final String CLAIM_PRE_AUTH = "pre_auth";
+
     /**
      * Generate a token for the user
      * @param userDetails the details of the user
      * @return the token
      */
     public String generateToken(UserDetails userDetails) {
-        return buildToken(Map.of(), userDetails.getUsername(), jwtExpirationTime);
+        return buildToken(Map.of(CLAIM_PRE_AUTH, false), userDetails.getUsername(), jwtExpirationTime);
+    }
+
+    /**
+     * Generate a pre-authentication token for the user
+     * @param username the username of the user
+     * @return the pre-authentication token
+     */
+    public String generatePreAuthToken(String username) {
+        return buildToken(Map.of(CLAIM_PRE_AUTH, true), username, preAuthExpirationTime);
     }
 
     /**

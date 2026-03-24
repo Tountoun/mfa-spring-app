@@ -74,6 +74,14 @@ public class AuthDto {
             r.user = user;
             return r;
         }
+
+        public static LoginResponse mfaRequired(String preAuthToken, UserInfo user) {
+            LoginResponse r = new LoginResponse();
+            r.mfaRequired = true;
+            r.preAuthToken = preAuthToken;
+            r.user = user;
+            return r;
+        }
     }
 
     @Data

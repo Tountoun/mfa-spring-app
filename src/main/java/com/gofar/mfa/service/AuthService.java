@@ -93,6 +93,11 @@ public class AuthService {
         userRepository.resetFailedAttempts(user.getUsername());
         userRepository.updateLastLogin(user.getUsername(), LocalDateTime.now());
 
+        if (user.isMfaEnabled()) {
+            String preAuthToken = this.jwtService.generatePreAuthToken(user.getUsername());
+            log.info("Login succeeded. MFA required for user {}", user.getUsername());
+            return AuthDto.LoginResponse.mfaRequired(preAuthToken, getUserInfoAfterRegistration(user));
+        }
         UserDetails userDetails = this.userDetailsService.loadUserByUsername(user.getUsername());
         String token = jwtService.generateToken(userDetails);
         log.info("Authentication successful for user: {}", user.getUsername());
