@@ -3,6 +3,11 @@ app:
     secret-key: ${JWT_SECRET:DPCjgTPZXCu8xz3QgeO07jHn37Koei86ZpUIhW2eAVc=}
     expiration-time: 900000 # 15 minutes
     pre-auth-expiration-time: 300000 # 5 minutes
+  mfa:
+    issuer: MFA App
+    number-of-digits: 6
+    period: 30
+    scratch-codes-count: 5
   name: mfa-app
   security:
     max-login-attempts: 3

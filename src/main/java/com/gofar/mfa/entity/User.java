@@ -39,6 +39,8 @@ public class User extends BaseAuditing {
     @Column(name = "mfa_verified", nullable = false)
     @Builder.Default
     private boolean mfaVerified = false;
+    @Column(name = "scratch_codes", length = 500)
+    private String scratchCodes;
 
     @Column(name = "account_locked", nullable = false)
     @Builder.Default
