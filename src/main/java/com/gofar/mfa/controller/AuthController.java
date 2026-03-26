@@ -2,6 +2,7 @@ package com.gofar.mfa.controller;
 
 import com.gofar.mfa.dto.ApiResponse;
 import com.gofar.mfa.dto.AuthDto;
+import com.gofar.mfa.dto.MfaEnableRequest;
 import com.gofar.mfa.dto.MfaSetupData;
 import com.gofar.mfa.entity.User;
 import com.gofar.mfa.repository.UserRepository;
@@ -63,6 +64,23 @@ public class AuthController {
         MfaSetupData setupData = this.tOtpService.setupMfa(user);
 
         return ResponseEntity.ok(ApiResponse.ok("MFA setup initialized", setupData));
+    }
+
+
+    @PostMapping("/mfa/enable")
+    @Operation(summary = "Enable MFA", description = "Enable MFA for the authenticated user (Confirmation after QR Code scan)")
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<ApiResponse> enableMfa(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @Valid @RequestBody MfaEnableRequest request
+    ) {
+        User user = getAuthenticatedUser(userDetails.getUsername());
+
+        if (this.tOtpService.enableMfa(user, request.totp())) {
+            return ResponseEntity.ok(ApiResponse.ok("MFA enabled successfully. Keep your scratch codes safe."));
+        }
+
+        return ResponseEntity.badRequest().body(ApiResponse.error("Invalid TOTP. Check your device and try again."));
     }
 
     private User getAuthenticatedUser(String username) {
