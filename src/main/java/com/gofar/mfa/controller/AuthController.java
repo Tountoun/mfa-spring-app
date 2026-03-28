@@ -57,8 +57,7 @@ public class AuthController {
     public ResponseEntity<ApiResponse> setupMfa(@AuthenticationPrincipal UserDetails userDetails) {
         User user = getAuthenticatedUser(userDetails.getUsername());
         if (user.isMfaEnabled()) {
-            // MFA already enabled
-            return ResponseEntity.badRequest().body(null);
+            return ResponseEntity.badRequest().body(ApiResponse.error("Mfa already setup for user " + user.getUsername()));
         }
 
         MfaSetupData setupData = this.tOtpService.setupMfa(user);
