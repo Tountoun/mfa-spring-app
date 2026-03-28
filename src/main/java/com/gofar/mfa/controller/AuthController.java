@@ -2,7 +2,7 @@ package com.gofar.mfa.controller;
 
 import com.gofar.mfa.dto.ApiResponse;
 import com.gofar.mfa.dto.AuthDto;
-import com.gofar.mfa.dto.MfaEnableRequest;
+import com.gofar.mfa.dto.MfaOtpRequest;
 import com.gofar.mfa.dto.MfaSetupData;
 import com.gofar.mfa.entity.User;
 import com.gofar.mfa.repository.UserRepository;
@@ -72,7 +72,7 @@ public class AuthController {
     @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<ApiResponse> enableMfa(
             @AuthenticationPrincipal UserDetails userDetails,
-            @Valid @RequestBody MfaEnableRequest request
+            @Valid @RequestBody MfaOtpRequest request
     ) {
         User user = getAuthenticatedUser(userDetails.getUsername());
 
@@ -81,6 +81,21 @@ public class AuthController {
         }
 
         return ResponseEntity.badRequest().body(ApiResponse.error("Invalid TOTP. Check your device and try again."));
+    }
+
+    @PostMapping("/mfa/disable")
+    @Operation(summary = "Disable MFA", description = "Disable MFA for the authenticated user")
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<ApiResponse> disableMfa(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @Valid @RequestBody MfaOtpRequest request
+    ) {
+        User user = getAuthenticatedUser(userDetails.getUsername());
+
+        if (!this.tOtpService.disableMfa(user, request.totp())) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("MFA not disabled. Invalid TOTP; check your device and try again."));
+        }
+        return ResponseEntity.ok(ApiResponse.ok("MFA disabled successfully"));
     }
 
     private User getAuthenticatedUser(String username) {

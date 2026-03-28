@@ -1,5 +1,6 @@
 package com.gofar.mfa.service;
 
+import com.gofar.mfa.dto.ApiResponse;
 import com.gofar.mfa.dto.MfaSetupData;
 import com.gofar.mfa.entity.User;
 import com.gofar.mfa.repository.UserRepository;
@@ -16,7 +17,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.ByteArrayOutputStream;
 import java.net.URLEncoder;
@@ -95,6 +98,27 @@ public class TOtpService {
     }
 
     /**
+     * Disable MFA for the user
+     * @param user the user
+     * @return true if the MFA was disabled, false otherwise
+     */
+    public boolean disableMfa(User user, String otp) {
+        if (Objects.isNull(user.getMfaSecret())) {
+            throw new IllegalStateException("MFA not setup for user: " + user.getUsername() + ". Please setup MFA before enabling it.");
+        }
+
+        if (!this.verifyTotp(user.getMfaSecret(), otp)) {
+            return false;
+        }
+        user.setMfaEnabled(false);
+        user.setMfaSecret(null);
+        user.setMfaVerified(false);
+        user.setScratchCodes(null);
+        this.userRepository.save(user);
+        return true;
+    }
+
+    /**
      * Build the OTP Auth URL
      * Format otpauth://<type>/<label>?secret=<secret>&issuer=<issuer>&digits=<digits>&period=<period>&algorithm=<algorithm>
      * @param username the username
@@ -170,7 +194,7 @@ public class TOtpService {
      * @param totp the TOTP code
      * @return true if the TOTP is valid, false otherwise
      */
-    private boolean verifyTotp(String secret, String totp) {
+    public boolean verifyTotp(String secret, String totp) {
         try {
             TimeProvider timeProvider = new SystemTimeProvider();
             CodeGenerator codeGenerator = new DefaultCodeGenerator(HashingAlgorithm.SHA1, numberOfDigits);
