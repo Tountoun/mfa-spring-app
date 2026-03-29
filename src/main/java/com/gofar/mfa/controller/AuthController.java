@@ -17,10 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -95,6 +92,16 @@ public class AuthController {
             return ResponseEntity.badRequest().body(ApiResponse.error("MFA not disabled. Invalid TOTP; check your device and try again."));
         }
         return ResponseEntity.ok(ApiResponse.ok("MFA disabled successfully"));
+    }
+
+    @GetMapping("/me")
+    @Operation(summary = "Get authenticated user", description = "Get the authenticated user")
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<ApiResponse> me(@AuthenticationPrincipal UserDetails userDetails) {
+        User user = getAuthenticatedUser(userDetails.getUsername());
+
+        return ResponseEntity.ok(ApiResponse.ok("Request executed successfully",
+                this.authService.getUserInfoAfterRegistration(user)));
     }
 
     private User getAuthenticatedUser(String username) {

@@ -151,7 +151,7 @@ public class AuthService {
      * @param user the user entity
      * @return the necessary user details
      */
-    private AuthDto.UserInfo getUserInfoAfterRegistration(User user) {
+    public AuthDto.UserInfo getUserInfoAfterRegistration(User user) {
         return AuthDto.UserInfo.builder()
                 .id(user.getId())
                 .username(user.getUsername())
