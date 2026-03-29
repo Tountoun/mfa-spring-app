@@ -1,9 +1,6 @@
 package com.gofar.mfa.controller;
 
-import com.gofar.mfa.dto.ApiResponse;
-import com.gofar.mfa.dto.AuthDto;
-import com.gofar.mfa.dto.MfaOtpRequest;
-import com.gofar.mfa.dto.MfaSetupData;
+import com.gofar.mfa.dto.*;
 import com.gofar.mfa.entity.User;
 import com.gofar.mfa.repository.UserRepository;
 import com.gofar.mfa.service.AuthService;
@@ -92,6 +89,18 @@ public class AuthController {
             return ResponseEntity.badRequest().body(ApiResponse.error("MFA not disabled. Invalid TOTP; check your device and try again."));
         }
         return ResponseEntity.ok(ApiResponse.ok("MFA disabled successfully"));
+    }
+
+    @GetMapping("/mfa/status")
+    @Operation(summary = "Get MFA status", description = "Get the MFA status for the authenticated user")
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<ApiResponse> mfaStatus(@AuthenticationPrincipal UserDetails userDetails) {
+        User user = getAuthenticatedUser(userDetails.getUsername());
+        return ResponseEntity.ok(ApiResponse.ok("Request executed successfully", MfaStatus.builder()
+                .mfaEnabled(user.isMfaEnabled())
+                .mfaVerified(user.isMfaVerified())
+                .message(user.isMfaEnabled() ? "MFA is enabled. Your account is secure." : "MFA is not enabled. We recommend enabling it for better security.")
+                .build()));
     }
 
     @GetMapping("/me")
