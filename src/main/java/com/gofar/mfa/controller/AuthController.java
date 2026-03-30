@@ -47,6 +47,15 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.ok("Login successful", this.authService.authenticate(loginRequest)));
     }
 
+    @PostMapping("/mfa/verify")
+    @Operation(summary = "Verify MFA for users that have MFA enabled", description = "Login a user with MFA and return a JWT token with user information")
+    public ResponseEntity<ApiResponse> loginWithMfa(
+            @Valid
+            @RequestBody MfaVerifyRequest request
+    ) {
+        return ResponseEntity.ok(ApiResponse.ok("Login successful", this.authService.authenticateWithMfa(request)));
+    }
+
     @PostMapping("/mfa/setup")
     @Operation(summary = "Initialize MFA", description = "Initialize MFA setup for the authenticated user")
     @SecurityRequirement(name = "bearerAuth")

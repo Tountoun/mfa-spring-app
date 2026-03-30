@@ -77,6 +77,32 @@ public class JwtService {
     }
 
     /**
+     * Check if the pre-authentication token is valid
+     * @param token the token
+     * @param username the username of the user
+     * @return true if the token is valid, false otherwise
+     */
+    public boolean isPreAuthTokenValid(String token, String username) {
+        try {
+            final String tokenUsername = extractUsername(token);
+            return tokenUsername.equals(username)
+                    && !isTokenExpired(token)
+                    && isPreAuthToken(token);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * Check if the token is a pre-authentication token
+     * @param token the token
+     * @return true if the token is a pre-authentication token, false otherwise
+     */
+    private boolean isPreAuthToken(String token) {
+        return extractClaim(token, claims -> claims.get(CLAIM_PRE_AUTH, Boolean.class));
+    }
+
+    /**
      * Extract a claim from the token
      * @param token the token
      * @param claimsResolver a function to extract the claim

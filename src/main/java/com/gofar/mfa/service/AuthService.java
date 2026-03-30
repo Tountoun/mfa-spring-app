@@ -2,6 +2,7 @@ package com.gofar.mfa.service;
 
 
 import com.gofar.mfa.dto.AuthDto;
+import com.gofar.mfa.dto.MfaVerifyRequest;
 import com.gofar.mfa.entity.User;
 import com.gofar.mfa.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,7 @@ public class AuthService {
     private JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final UserDetailsService userDetailsService;
+    private final TOtpService tOtpService;
 
     @Value("${app.security.max-login-attempts:5}")
     private int maxLoginAttempts;
@@ -101,6 +103,38 @@ public class AuthService {
         UserDetails userDetails = this.userDetailsService.loadUserByUsername(user.getUsername());
         String token = jwtService.generateToken(userDetails);
         log.info("Authentication successful for user: {}", user.getUsername());
+        return AuthDto.LoginResponse.success(token, getUserInfoAfterRegistration(user));
+    }
+
+    /**
+     * This method is used to authenticate a user with MFA and issue a JWT token if credentials are valid
+     * @param request the MFA verification request
+     * @return the login response with token and user info
+     */
+    public AuthDto.LoginResponse authenticateWithMfa(MfaVerifyRequest request) {
+        String username = this.jwtService.extractUsername(request.preAuthToken());
+        if (!this.jwtService.isPreAuthTokenValid(request.preAuthToken(), username)) {
+            throw new BadCredentialsException("Invalid or expired pre-authentication token");
+        }
+        User user = this.userRepository.findByUsername(username)
+                .orElseThrow(() -> {
+                    log.warn("Authentication failed: User not found with username: {}", username);
+                    return new BadCredentialsException("Invalid user credentials");
+                });
+
+        if (!user.isMfaEnabled()) {
+            throw new IllegalStateException("MFA is not enabled for user: " + user.getUsername());
+        }
+
+        if (!this.tOtpService.verifyTotp(user.getMfaSecret(), request.code())) {
+            handleFailedAuthentication(user);
+            throw new IllegalArgumentException("Invalid MFA code. Please try again.");
+        }
+
+        this.userRepository.resetFailedAttempts(user.getUsername());
+        log.info("MFA verified for user: {}", user.getUsername());
+        UserDetails userDetails = this.userDetailsService.loadUserByUsername(user.getUsername());
+        String token = jwtService.generateToken(userDetails);
         return AuthDto.LoginResponse.success(token, getUserInfoAfterRegistration(user));
     }
 
