@@ -16,6 +16,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/auth")
 @Tag(name = "Auth", description = "Authentication API")
@@ -101,6 +103,19 @@ public class AuthController {
                 .mfaVerified(user.isMfaVerified())
                 .message(user.isMfaEnabled() ? "MFA is enabled. Your account is secure." : "MFA is not enabled. We recommend enabling it for better security.")
                 .build()));
+    }
+
+    @PostMapping("/mfa/scratch-codes")
+    @Operation(summary = "Regenerate scratch codes", description = "Regenerate scratch codes for the authenticated user")
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<ApiResponse> regenerateScratchCodes(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @Valid @RequestBody MfaOtpRequest request
+    ) {
+        User user = getAuthenticatedUser(userDetails.getUsername());
+        List<String> scratchCodes = this.tOtpService.regenerateScratchCodes(user, request.totp());
+
+        return ResponseEntity.ok(ApiResponse.ok("Scratch codes regenerated successfully", scratchCodes));
     }
 
     @GetMapping("/me")

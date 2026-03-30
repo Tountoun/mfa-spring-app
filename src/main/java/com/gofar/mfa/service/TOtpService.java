@@ -1,6 +1,5 @@
 package com.gofar.mfa.service;
 
-import com.gofar.mfa.dto.ApiResponse;
 import com.gofar.mfa.dto.MfaSetupData;
 import com.gofar.mfa.entity.User;
 import com.gofar.mfa.repository.UserRepository;
@@ -17,9 +16,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.io.ByteArrayOutputStream;
 import java.net.URLEncoder;
@@ -119,6 +116,22 @@ public class TOtpService {
     }
 
     /**
+     * Regenerate the scratch codes
+     * @param user the user
+     * @param totp the TOTP code
+     * @return the new scratch codes
+     */
+    public List<String> regenerateScratchCodes(User user, String totp) {
+        if (!user.isMfaEnabled()) {
+            throw new IllegalStateException("MFA not enabled for user: " + user.getUsername() + ". Please enable MFA before regenerating scratch codes.");
+        }
+        if (!verifyTotp(user.getMfaSecret(), totp)) {
+            throw new IllegalArgumentException("Invalid TOTP. Check your device and try again.");
+        }
+        return generateScratchCodes(user);
+    }
+
+    /**
      * Build the OTP Auth URL
      * Format otpauth://<type>/<label>?secret=<secret>&issuer=<issuer>&digits=<digits>&period=<period>&algorithm=<algorithm>
      * @param username the username
@@ -198,8 +211,8 @@ public class TOtpService {
         try {
             TimeProvider timeProvider = new SystemTimeProvider();
             CodeGenerator codeGenerator = new DefaultCodeGenerator(HashingAlgorithm.SHA1, numberOfDigits);
-            CodeVerifier codeVerifier = new DefaultCodeVerifier(codeGenerator, timeProvider);
-            ((DefaultCodeVerifier) codeVerifier).setAllowedTimePeriodDiscrepancy(1);
+            DefaultCodeVerifier codeVerifier = new DefaultCodeVerifier(codeGenerator, timeProvider);
+            codeVerifier.setAllowedTimePeriodDiscrepancy(1);
             return codeVerifier.isValidCode(secret, totp);
         } catch (Exception e) {
             log.error("Error verifying TOTP", e);
