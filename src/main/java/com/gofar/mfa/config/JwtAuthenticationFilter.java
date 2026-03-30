@@ -47,6 +47,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (Objects.nonNull(username) && Objects.isNull(SecurityContextHolder.getContext().getAuthentication())) {
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
+                if (jwtService.isPreAuthToken(jwt)) {
+                    String requestUri = request.getRequestURI();
+                    if (!requestUri.equals("/api/auth/mfa/verify")) {
+                        log.warn("Pre-authentication token used for wrong endpoint");
+                        filterChain.doFilter(request, response);
+                        return;
+                    }
+                    filterChain.doFilter(request, response);
+                    return;
+                }
                 if (jwtService.isTokenValid(jwt, userDetails)) {
                     UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                     usernamePasswordAuthenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
