@@ -98,8 +98,12 @@ public class JwtService {
      * @param token the token
      * @return true if the token is a pre-authentication token, false otherwise
      */
-    private boolean isPreAuthToken(String token) {
-        return extractClaim(token, claims -> claims.get(CLAIM_PRE_AUTH, Boolean.class));
+    public boolean isPreAuthToken(String token) {
+        try {
+            return Boolean.TRUE.equals(extractClaim(token, claims -> claims.get(CLAIM_PRE_AUTH, Boolean.class)));
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     /**
